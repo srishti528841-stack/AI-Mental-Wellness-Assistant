@@ -47,7 +47,10 @@ Can you tell me whether you are currently safe?
 
 load_dotenv()
 
-api_key = os.getenv("GEMINI_API_KEY")
+if "GEMINI_API_KEY" in st.secrets:
+    api_key = st.secrets["GEMINI_API_KEY"]
+else:
+    api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
     st.error("Gemini API key not found. Please check your .env file.")
