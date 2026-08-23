@@ -182,114 +182,101 @@ for message in st.session_state.messages:
 
 
 # -----------------------------------
-# Chat input
+# User input
 # -----------------------------------
 
-user_message = st.chat_input(
-    "How are you feeling today?"
+user_message = st.text_area(
+    "How are you feeling today?",
+    placeholder="Type your message here...",
+    height=100
 )
+
+send_button = st.button("📤 Send", type="primary")
 
 
 # -----------------------------------
 # Generate response
 # -----------------------------------
 
-if user_message:
+if send_button:
 
-    # -----------------------------------
-    # Display user message
-    # -----------------------------------
+    if not user_message.strip():
 
-    with st.chat_message("user"):
-        st.markdown(user_message)
+        st.warning("Please enter a message first.")
 
+    else:
 
-    # -----------------------------------
-    # Save user message
-    # -----------------------------------
-
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": user_message
-        }
-    )
-
-
-    # -----------------------------------
-    # Prepare conversation history
-    # -----------------------------------
-
-    conversation = []
-
-    for message in st.session_state.messages:
-
-        role = "user" if message["role"] == "user" else "model"
-
-        conversation.append(
+        # Save user message
+        st.session_state.messages.append(
             {
-                "role": role,
-                "parts": [
-                    {
-                        "text": message["content"]
-                    }
-                ]
+                "role": "user",
+                "content": user_message
             }
         )
 
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(user_message)
 
-    # -----------------------------------
-    # Generate Gemini response
-    # -----------------------------------
+        # Prepare conversation history
+        conversation = []
 
-    with st.chat_message("assistant"):
+        for message in st.session_state.messages:
 
-        with st.spinner("Thinking..."):
+            conversation.append(
+                {
+                    "role": message["role"],
+                    "parts": [
+                        {
+                            "text": message["content"]
+                        }
+                    ]
+                }
+            )
 
-            try:
+        # Generate AI response
+        with st.chat_message("assistant"):
 
-                response = client.models.generate_content(
-                    model="gemini-3.6-flash",
-                    contents=conversation,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction
+            with st.spinner("Thinking..."):
+
+                try:
+
+                    response = client.models.generate_content(
+                        model="gemini-3.6-flash",
+                        contents=conversation,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction
+                        )
                     )
-                )
 
-                if response.text:
+                    if response.text:
 
-                    assistant_response = response.text
+                        assistant_response = response.text
+                        st.markdown(assistant_response)
 
-                    st.markdown(assistant_response)
+                    else:
 
-                else:
+                        assistant_response = (
+                            "I'm sorry, I couldn't generate a response."
+                        )
+
+                        st.warning(assistant_response)
+
+                except Exception as e:
 
                     assistant_response = (
-                        "I'm sorry, I couldn't generate a response."
+                        "Sorry, I was unable to generate a response."
                     )
 
-                    st.warning(assistant_response)
+                    st.error(assistant_response)
 
-            except Exception as e:
-
-                assistant_response = (
-                    "Sorry, I was unable to generate a response."
-                )
-
-                st.error(assistant_response)
-                st.exception(e)
-
-
-    # -----------------------------------
-    # Save assistant response
-    # -----------------------------------
-
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": assistant_response
-        }
-    )
+        # Save assistant response
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": assistant_response
+            }
+        )
 
 
 # -----------------------------------
