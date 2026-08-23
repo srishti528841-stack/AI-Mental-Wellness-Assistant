@@ -188,7 +188,7 @@ for message in st.session_state.messages:
 user_message = st.text_area(
     "How are you feeling today?",
     placeholder="Type your message here...",
-    height=150
+    height=100
 )
 
 send_button = st.button("📤 Send", type="primary")
