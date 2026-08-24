@@ -225,95 +225,120 @@ if send_button:
 
     else:
 
-        # Save user message
-        st.session_state.messages.append(
-            {
-                "role": "user",
-                "content": user_message
-            }
-        )
+        # Check for high-risk message first
+        if check_high_risk_message(user_message):
 
-        # Display user message
-        with st.chat_message("user"):
-            st.markdown(user_message)
+            assistant_response = get_safety_response()
 
-        # Prepare conversation history
-        conversation = []
-
-# Add the user's selected mood
-conversation.append(
-    {
-        "role": "user",
-        "parts": [
-            {
-                "text": f"My current mood is: {mood}"
-            }
-        ]
-    }
-)
-
-# Add previous conversation
-for message in st.session_state.messages:
-
-    conversation.append(
-        {
-            "role": message["role"],
-            "parts": [
+            # Save user message
+            st.session_state.messages.append(
                 {
-                    "text": message["content"]
+                    "role": "user",
+                    "content": user_message
                 }
-            ]
-        }
-    )
+            )
 
-        # Generate AI response
-        with st.chat_message("assistant"):
+            # Save safety response
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": assistant_response
+                }
+            )
 
-            with st.spinner("Thinking..."):
+            # Display response
+            with st.chat_message("assistant"):
+                st.markdown(assistant_response)
 
-                try:
+        else:
 
-                    response = client.models.generate_content(
-                        model="gemini-3.6-flash",
-                        contents=conversation,
-                        config=types.GenerateContentConfig(
-                            system_instruction=system_instruction
+            # Save user message
+            st.session_state.messages.append(
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            )
+
+            # Create conversation
+            conversation = []
+
+            # Add mood
+            conversation.append(
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": f"My current mood is: {mood}"
+                        }
+                    ]
+                }
+            )
+
+            # Add chat history
+            for message in st.session_state.messages:
+
+                # Gemini expects model instead of assistant
+                role = (
+                    "model"
+                    if message["role"] == "assistant"
+                    else "user"
+                )
+
+                conversation.append(
+                    {
+                        "role": role,
+                        "parts": [
+                            {
+                                "text": message["content"]
+                            }
+                        ]
+                    }
+                )
+
+            # Generate AI response
+            with st.chat_message("assistant"):
+
+                with st.spinner("Thinking..."):
+
+                    try:
+
+                        response = client.models.generate_content(
+                            model="gemini-3.6-flash",
+                            contents=conversation,
+                            config=types.GenerateContentConfig(
+                                system_instruction=system_instruction
+                            )
                         )
-                    )
-
-                    if response.text:
 
                         assistant_response = response.text
-                        st.markdown(assistant_response)
 
-                    else:
+                        if assistant_response:
+                            st.markdown(assistant_response)
+
+                        else:
+                            assistant_response = (
+                                "I'm sorry, I couldn't generate a response."
+                            )
+
+                            st.warning(assistant_response)
+
+                    except Exception as e:
 
                         assistant_response = (
-                            "I'm sorry, I couldn't generate a response."
+                            "Sorry, I was unable to generate a response."
                         )
 
-                        st.warning(assistant_response)
+                        st.error(assistant_response)
+                        st.exception(e)
 
-                except Exception as e:
-
-                    assistant_response = (
-                        "Sorry, I was unable to generate a response."
-                    )
-
-                    st.error(assistant_response)
-
-        # Save assistant response
-        user_message_with_mood = (
-    f"My current mood is {mood}.\n\n"
-    f"My message is: {user_message}"
-)
-
-st.session_state.messages.append(
-    {
-        "role": "user",
-        "content": user_message_with_mood
-    }
-)
+            # Save assistant response
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": assistant_response
+                }
+            )
 
 
 # -----------------------------------
