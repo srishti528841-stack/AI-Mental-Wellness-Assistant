@@ -125,7 +125,7 @@ with st.sidebar:
 
     st.write(
         "This AI assistant provides general mental wellness "
-        "support using Google's Gemini API."
+        "conversation."
     )
 
     st.divider()
@@ -140,8 +140,7 @@ with st.sidebar:
     st.divider()
 
     st.caption(
-        "This assistant is not a replacement for professional "
-        "mental healthcare."
+        "For educational purposes only."
     )
 
 
@@ -150,6 +149,26 @@ with st.sidebar:
 # -----------------------------------
 
 st.title("🧠 AI Mental Wellness Assistant")
+
+# -----------------------------------
+# Mood Selection
+# -----------------------------------
+
+st.subheader("😊 How are you feeling today?")
+
+mood = st.selectbox(
+    "Select your current mood:",
+    [
+        "😊 Happy",
+        "🙂 Good",
+        "😐 Okay",
+        "😟 Worried",
+        "😰 Stressed",
+        "😔 Sad",
+        "😡 Angry",
+        "😴 Tired"
+    ]
+)
 
 st.write(
     "A supportive AI assistant for general mental wellness "
@@ -188,7 +207,7 @@ for message in st.session_state.messages:
 user_message = st.text_area(
     "How are you feeling today?",
     placeholder="Type your message here...",
-    height=100
+    height=120
 )
 
 send_button = st.button("📤 Send", type="primary")
@@ -221,18 +240,31 @@ if send_button:
         # Prepare conversation history
         conversation = []
 
-        for message in st.session_state.messages:
+# Add the user's selected mood
+conversation.append(
+    {
+        "role": "user",
+        "parts": [
+            {
+                "text": f"My current mood is: {mood}"
+            }
+        ]
+    }
+)
 
-            conversation.append(
+# Add previous conversation
+for message in st.session_state.messages:
+
+    conversation.append(
+        {
+            "role": message["role"],
+            "parts": [
                 {
-                    "role": message["role"],
-                    "parts": [
-                        {
-                            "text": message["content"]
-                        }
-                    ]
+                    "text": message["content"]
                 }
-            )
+            ]
+        }
+    )
 
         # Generate AI response
         with st.chat_message("assistant"):
@@ -271,12 +303,17 @@ if send_button:
                     st.error(assistant_response)
 
         # Save assistant response
-        st.session_state.messages.append(
-            {
-                "role": "assistant",
-                "content": assistant_response
-            }
-        )
+        user_message_with_mood = (
+    f"My current mood is {mood}.\n\n"
+    f"My message is: {user_message}"
+)
+
+st.session_state.messages.append(
+    {
+        "role": "user",
+        "content": user_message_with_mood
+    }
+)
 
 
 # -----------------------------------
@@ -285,7 +322,8 @@ if send_button:
 
 if st.session_state.messages:
 
-    if st.button("🗑️ Clear Chat"):
+    if st.button("🗑️ Clear Chat",
+    use_container_width=True):
 
         st.session_state.messages = []
 
