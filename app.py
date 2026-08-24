@@ -310,7 +310,8 @@ if send_button:
                             model="gemini-3.6-flash",
                             contents=conversation,
                             config=types.GenerateContentConfig(
-                                system_instruction=system_instruction
+                                system_instruction=system_instruction,
+                                max_output_tokens=1500
                             )
                         )
 
